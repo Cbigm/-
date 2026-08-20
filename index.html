@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#03020a" />
+    <title>星火夜游 · 互动烟花</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <canvas id="fireworks" aria-label="互动烟花画布"></canvas>
+
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="星火夜游首页">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>星火夜游</span>
+      </a>
+      <div class="actions">
+        <button id="soundButton" class="icon-button" type="button" aria-label="开启声音" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.1-3.8v7.6a4.5 4.5 0 0 0 2.1-3.8Z"/><path class="sound-wave" d="M17.4 5.8a8 8 0 0 1 0 12.4"/></svg>
+        </button>
+        <button id="fullscreenButton" class="icon-button" type="button" aria-label="全屏显示">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9V5h4M15 5h4v4M19 15v4h-4M9 19H5v-4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <p class="eyebrow"><span></span> INTERACTIVE NIGHT <span></span></p>
+        <h1 id="title">划过夜空<br /><em>点亮星河</em></h1>
+        <p class="intro">移动鼠标，留下一路细碎星火<br />轻轻点击，绽放一场盛大烟花</p>
+        <div class="hint" aria-hidden="true">
+          <span class="mouse"><i></i></span>
+          <span>滑动探索 · 点击绽放</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>今晚的第 <strong id="counter">0</strong> 朵烟花</span>
+      <span class="footer-line"></span>
+      <span>愿此刻的光，也照亮你</span>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
