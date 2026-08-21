@@ -6,7 +6,10 @@ const fullscreenButton = document.querySelector('#fullscreenButton');
 
 const particles = [];
 const stars = [];
-const palette = ['#ffd787', '#ff9f63', '#ff7199', '#a77dff', '#66d9ff', '#f9f2dc'];
+const palette = [
+  '#ffd166', '#ff9f43', '#ff6b6b', '#ff70a6', '#d66efd',
+  '#8b7cff', '#55d6ff', '#57f2cc', '#b8f26d', '#fff4d6'
+];
 let width = 0;
 let height = 0;
 let dpr = 1;
@@ -14,6 +17,9 @@ let lastMove = 0;
 let fireworkCount = 0;
 let audioContext;
 let soundEnabled = false;
+let lastFrame = performance.now();
+
+const MAX_PARTICLES = 3500;
 
 function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -45,22 +51,24 @@ class Particle {
     this.drag = options.drag ?? .985;
     this.twinkle = Math.random() * 6;
     this.trail = [];
+    this.trailLength = options.trailLength || 11;
   }
 
-  update() {
-    if (this.life % 2 > 1) this.trail.push({ x: this.x, y: this.y });
-    if (this.trail.length > 5) this.trail.shift();
-    this.vx *= this.drag;
-    this.vy = this.vy * this.drag + this.gravity;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.life--;
+  update(frameScale) {
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > this.trailLength) this.trail.shift();
+    const adjustedDrag = Math.pow(this.drag, frameScale);
+    this.vx *= adjustedDrag;
+    this.vy = this.vy * adjustedDrag + this.gravity * frameScale;
+    this.x += this.vx * frameScale;
+    this.y += this.vy * frameScale;
+    this.life -= frameScale;
   }
 
   draw() {
     const alpha = Math.max(0, this.life / this.maxLife);
     ctx.save();
-    ctx.globalAlpha = alpha * .35;
+    ctx.globalAlpha = alpha * .42;
     ctx.strokeStyle = this.color;
     ctx.lineWidth = this.size * .6;
     ctx.beginPath();
@@ -78,26 +86,53 @@ class Particle {
   }
 }
 
-function burst(x, y, large = false) {
-  const color = palette[Math.floor(Math.random() * (palette.length - 1))];
-  const count = large ? 150 : 10;
+function burst(x, y, large = false, forcedColor) {
+  const color = forcedColor || palette[Math.floor(Math.random() * palette.length)];
+  const accent = palette[Math.floor(Math.random() * palette.length)];
+  const count = large ? 240 : 20;
   for (let i = 0; i < count; i++) {
-    const ring = large && i < 100;
-    const speed = ring ? 3.2 + Math.random() * 3.4 : .8 + Math.random() * (large ? 5 : 2);
+    const ring = large && i < 180;
+    const speed = ring ? 4.8 + Math.random() * 5.1 : .8 + Math.random() * (large ? 7.5 : 2.4);
     particles.push(new Particle(x, y, {
-      angle: ring ? (i / 100) * Math.PI * 2 + (Math.random() - .5) * .035 : Math.random() * Math.PI * 2,
+      angle: ring ? (i / 180) * Math.PI * 2 + (Math.random() - .5) * .025 : Math.random() * Math.PI * 2,
       speed,
-      color: Math.random() < .78 ? color : palette[Math.floor(Math.random() * palette.length)],
-      life: large ? 72 + Math.random() * 45 : 30 + Math.random() * 22,
+      color: Math.random() < .58 ? color : (Math.random() < .55 ? accent : palette[Math.floor(Math.random() * palette.length)]),
+      life: large ? 82 + Math.random() * 52 : 38 + Math.random() * 28,
       size: large ? 1.2 + Math.random() * 2 : .8 + Math.random() * 1.2,
-      gravity: large ? .045 : .025
+      gravity: large ? .042 : .025,
+      trailLength: large ? 15 : 12
     }));
   }
+  if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
   if (large) {
     fireworkCount++;
     counter.textContent = fireworkCount;
     playPop();
   }
+}
+
+function triggerShake() {
+  document.body.classList.remove('is-shaking');
+  void document.body.offsetWidth;
+  document.body.classList.add('is-shaking');
+}
+
+function tripleBurst(x, y) {
+  const colors = [...palette].sort(() => Math.random() - .5).slice(0, 3);
+  const offsets = [
+    { x: 0, y: 0 },
+    { x: -Math.min(width * .1, 110), y: -Math.min(height * .07, 65) },
+    { x: Math.min(width * .1, 110), y: Math.min(height * .04, 36) }
+  ];
+
+  triggerShake();
+  offsets.forEach((offset, index) => {
+    window.setTimeout(() => {
+      const burstX = Math.max(30, Math.min(width - 30, x + offset.x));
+      const burstY = Math.max(30, Math.min(height - 30, y + offset.y));
+      burst(burstX, burstY, true, colors[index]);
+    }, index * 190);
+  });
 }
 
 function playPop() {
@@ -117,6 +152,8 @@ function playPop() {
 }
 
 function animate(time) {
+  const frameScale = Math.min((time - lastFrame) / (1000 / 60), 2);
+  lastFrame = time;
   ctx.clearRect(0, 0, width, height);
   for (const star of stars) {
     ctx.globalAlpha = star.a * (.7 + Math.sin(time * .001 + star.phase) * .3);
@@ -124,11 +161,13 @@ function animate(time) {
     ctx.fillRect(star.x, star.y, star.r, star.r);
   }
   ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'lighter';
   for (let i = particles.length - 1; i >= 0; i--) {
-    particles[i].update();
+    particles[i].update(frameScale);
     particles[i].draw();
     if (particles[i].life <= 0) particles.splice(i, 1);
   }
+  ctx.globalCompositeOperation = 'source-over';
   requestAnimationFrame(animate);
 }
 
@@ -142,7 +181,7 @@ window.addEventListener('pointermove', (event) => {
 
 window.addEventListener('pointerdown', (event) => {
   if (event.target.closest('button, a')) return;
-  burst(event.clientX, event.clientY, true);
+  tripleBurst(event.clientX, event.clientY);
 });
 
 soundButton.addEventListener('click', () => {
